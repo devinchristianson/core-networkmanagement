@@ -1,0 +1,27 @@
+{{ define "index" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Network Management</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="assets/css/skeleton.css">
+  <link rel="stylesheet" href="assets/css/normalize.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<div class="nav">
+{{ with .Pages }}
+<ul>
+{{ range . }}
+  <li>
+  <a href="{{ .Location }}">{{ .Name }}</a> 
+  </li>
+{{ end }}
+</ul>
+{{ end }}
+</div>      
+
+</body>
+</html>
+{{ end }}
