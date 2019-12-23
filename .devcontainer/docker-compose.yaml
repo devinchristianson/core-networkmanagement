@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+    golang:
+        build: .
+        volumes:
+            - ../:/go/src/core-networkmanager
+        ports:
+            - "8080:8080"
+        cap_add:
+            - SYS_PTRACE
+        security_opt:
+            - seccomp:unconfined
+        command: sleep infinity
+    roach:
+        image: cockroachdb/cockroach:v19.2.2
+        hostname: roach
+        command: start-single-node --insecure
+        ports:
+            - "26257:26257"
+            - "8081:8080"
+        volumes:
+            - data:/cockroach/cockroach-data
+
+volumes: 
+    data:

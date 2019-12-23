@@ -7,6 +7,7 @@ import (
 	"strings"
 	"strconv"
 	"html/template"
+	"github.com/lib/pq"
 )
 
 func main() {
@@ -29,15 +30,15 @@ type Page struct {
 
 func homePage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		t, _ := template.ParseFiles("index.gohtml")
-		home := Page{Location: "/", Name: "Home"}
-		data := struct {
-			Pages []*Page
-		} {
-			Pages: []*Page{ &home },
+		t, err := template.ParseFiles("index.gohtml")
+		if err != nil {
+			log.Fatal("Parse failed: ", err)
 		}
-		if err := t.Execute(w, data); err != nil {
-			println("parse failed with error", err)
+		home := Page{Location: "/", Name: "Home"}
+		search := Page{Location: "/search", Name: "Search"}
+		data := struct { Pages []*Page }{ []*Page{ &home, &search } }
+		if err := t.ExecuteTemplate(w, "index", data); err != nil {
+			log.Fatal("ExecuteTemplate failed:", err)
 		}
     } else {
         r.ParseForm()
