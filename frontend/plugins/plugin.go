@@ -10,27 +10,10 @@ var (
 	pluginMu sync.RWMutex
 	plugins   = make(map[string]Plugin)
 	activePlugins = make(map[string]Plugin)
-	universalPlugins = make(map[string]UniversalHandlerPlugin)
+	universalPlugins [] UniversalHandlerPlugin
 	endpointMappings = make(map[string]func(http.ResponseWriter, *http.Request))
 	mux *http.ServeMux
 )
-
-//SetupPlugins activates plugins and loads endpoints
-func SetupPlugins(m *http.ServeMux, names[] string) {
-	for _, n := range names {
-		if _, exists := plugins[n]; !exists {
-			log.Fatalf("Plugin %s does not exist", n)
-		}
-		plugins[n].Activate()
-		if _, universal := plugins[n].(UniversalHandlerPlugin); universal {
-			universalPlugins[n] = plugins[n].(UniversalHandlerPlugin)
-		}
-	}
-	mux = m
-	for key, element := range endpointMappings {
-        mux.HandleFunc(key, element)
-    }
-}
 
 //Plugin is an interface defining all plugin exported functions
 type Plugin interface {
@@ -42,6 +25,39 @@ type UniversalHandlerPlugin interface {
 	Plugin
 	UniversalHandler(http.HandlerFunc) http.HandlerFunc
 }
+
+//SetupPlugins activates plugins and loads endpoints
+func SetupPlugins(m *http.ServeMux, names[] string) {
+	for _, n := range names {
+		if _, exists := plugins[n]; !exists {
+			log.Fatalf("Plugin %s does not exist", n)
+		}
+		plugins[n].Activate()
+		if p, universal := plugins[n].(UniversalHandlerPlugin); universal {
+			universalPlugins = append(universalPlugins, p)
+		}
+	}
+	mux = m
+	for key, element := range endpointMappings {
+        mux.HandleFunc(key, chainUniversalHandlers(element))
+    }
+}
+func chainUniversalHandlers(h http.HandlerFunc) http.HandlerFunc {
+
+	if len(universalPlugins) < 1 {
+	   return h
+	}
+ 
+	wrapped := h
+ 
+	// loop in reverse to preserve middleware order
+	for i := len(universalPlugins) - 1; i >= 0; i-- {
+	   wrapped = universalPlugins[i].UniversalHandler(wrapped)
+	}
+ 
+	return wrapped
+ 
+ }
 
 //RegisterPlugin registers plugins. Should be called using init in plugin package
 func RegisterPlugin(name string, p Plugin) {
