@@ -10,15 +10,15 @@ import (
 var db *sql.DB
 
 const (
-	DB_USER     = "postgres"
-	DB_PASSWORD = "postgres"
-	DB_NAME     = "test"
+	dbUser     = "postgres"
+	dbPassword = "postgres"
+	dbName     = "test"
 )
 
 func initDB() {
 	dbcreds := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
-	DB_USER, DB_PASSWORD, DB_NAME)
-	db, dberr := sql.Open("roach", dbcreds)
+	dbUser, dbPassword, dbName)
+	db, dberr := sql.Open("postgres", dbcreds)
 	if dberr != nil {
 		log.Fatal(dberr)
 	}
