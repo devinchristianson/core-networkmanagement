@@ -18,11 +18,10 @@ func init() {
 	plugins.RegisterPlugin("assets", &Plugin{})
 }
 
-//Setup sets up endpoints and such
-func (p Plugin ) Setup (mux *http.ServeMux) {
+//Activate sets up endpoints and such
+func (p Plugin ) Activate () {
 	fileserver := http.FileServer(FileSystem{http.Dir("./assets")})
-	mux.Handle("/assets/", http.StripPrefix("/assets", fileserver))
-
+	plugins.RegisterEndpoint("/assets/", http.StripPrefix("/assets", fileserver).ServeHTTP)
 }
 //FileSystem implements http.Filesystem, with Open() that doesnt allow Dirs
 type FileSystem struct {

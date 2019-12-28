@@ -14,9 +14,8 @@ func main() {
 	initDB()
 	var port = 8080
 	mux := http.NewServeMux()
-	plugins.Setup(mux)
-	plugins.Plugins["root"].Setup(mux)
-	plugins.Plugins["assets"].Setup(mux)
+	activePlugins := []string{"root", "assets"}
+	plugins.SetupPlugins(mux, activePlugins)
 	err := http.ListenAndServe(":" + strconv.Itoa(port), mux)
 	if(err != nil) {
 		log.Fatal("ListenAndServe failed with error: ", err)

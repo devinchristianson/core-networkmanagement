@@ -8,18 +8,33 @@ import (
 
 var (
 	pluginMu sync.RWMutex
-	Plugins   = make(map[string]Plugin)
+	plugins   = make(map[string]Plugin)
+	activePlugins = make(map[string]Plugin)
 	universalPlugins = make(map[string]UniversalHandlerPlugin)
-	mux http.ServeMux
+	endpointMappings = make(map[string]func(http.ResponseWriter, *http.Request))
+	mux *http.ServeMux
 )
 
-func Setup (mux *http.ServeMux) {
-	mux = mux
+//SetupPlugins activates plugins and loads endpoints
+func SetupPlugins(m *http.ServeMux, names[] string) {
+	for _, n := range names {
+		if _, exists := plugins[n]; !exists {
+			log.Fatalf("Plugin %s does not exist", n)
+		}
+		plugins[n].Activate()
+		if _, universal := plugins[n].(UniversalHandlerPlugin); universal {
+			universalPlugins[n] = plugins[n].(UniversalHandlerPlugin)
+		}
+	}
+	mux = m
+	for key, element := range endpointMappings {
+        mux.HandleFunc(key, element)
+    }
 }
 
 //Plugin is an interface defining all plugin exported functions
 type Plugin interface {
-	Setup(*http.ServeMux) //should register endpoints and add database tables etc
+	Activate() //should register endpoints and add database tables etc
 }
 
 //UniversalHandlerPlugin is an interface that extends the Plugin interface, for if a plugin needs to be called on all endpoints
@@ -35,15 +50,19 @@ func RegisterPlugin(name string, p Plugin) {
 	if p == nil {
 		log.Fatal("Plugin is nil")
 	}
-	if _, duplicate := Plugins[name]; duplicate {
+	if _, duplicate := plugins[name]; duplicate {
 		log.Fatal("Plugin name already taken")
 	}
-	if _, universal := Plugins[name].(UniversalHandlerPlugin); universal {
-		universalPlugins[name] = p.(UniversalHandlerPlugin)
-	}
-	Plugins[name] = p 
+	plugins[name] = p 
 }
 
-func RegisterEndpoint (pattern string, handler func(http.ResponseWriter, *http.Request)) {
-
+//RegisterEndpoint points an endpoint to a specific plugin while keeping 
+func RegisterEndpoint(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	if handler == nil {
+		log.Fatalf("Handler for endpoint %s is nil", pattern)
+	}
+	if _, duplicate := endpointMappings[pattern]; duplicate {
+		log.Fatalf("Endpoint %s has already been allocated to a different plugin", pattern)
+	}
+	endpointMappings[pattern] = handler
 }

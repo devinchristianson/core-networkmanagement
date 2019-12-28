@@ -20,9 +20,9 @@ func init() {
 	plugins.RegisterPlugin("root", &Plugin{})
 }
 
-//Setup sets up endpoints and such
-func (p Plugin ) Setup (mux *http.ServeMux) {
-	mux.HandleFunc("/", homePage)
+//Activate sets up endpoints and such
+func (p Plugin ) Activate () {
+	plugins.RegisterEndpoint("/", homePage)
 }
 func homePage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
