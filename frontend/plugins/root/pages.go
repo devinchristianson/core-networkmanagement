@@ -8,22 +8,17 @@ import (
 	"core-networkmanager/frontend/plugins"
 )
 
+func setup() bool {
+	plugins.RegisterEndpoint("/", homePage)
+	return true
+}
+
 //Page struct to hold per-page data
 type page struct {
 	Location string
 	Name string
 }
 
-type Plugin struct {}
-
-func init() {
-	plugins.RegisterPlugin("root", &Plugin{})
-}
-
-//Activate sets up endpoints and such
-func (p Plugin ) Activate () {
-	plugins.RegisterEndpoint("/", homePage)
-}
 func homePage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, err := template.ParseFiles("index.gohtml")

@@ -4,8 +4,10 @@ import (
 	"log"
 	"sync"
 	"net/http"
+	"database/sql"
 )
 
+//Global variables
 var (
 	pluginMu sync.RWMutex
 	plugins   = make(map[string]Plugin)
@@ -13,21 +15,13 @@ var (
 	universalPlugins [] UniversalHandlerPlugin
 	endpointMappings = make(map[string]func(http.ResponseWriter, *http.Request))
 	mux *http.ServeMux
+	db *sql.DB
 )
 
-//Plugin is an interface defining all plugin exported functions
-type Plugin interface {
-	Activate() //should register endpoints and add database tables etc
-}
-
-//UniversalHandlerPlugin is an interface that extends the Plugin interface, for if a plugin needs to be called on all endpoints
-type UniversalHandlerPlugin interface {
-	Plugin
-	UniversalHandler(http.HandlerFunc) http.HandlerFunc
-}
-
 //SetupPlugins activates plugins and loads endpoints
-func SetupPlugins(m *http.ServeMux, names[] string) {
+func SetupPlugins(m *http.ServeMux, d *sql.DB, names[] string) {
+	mux = m
+	db = d
 	for _, n := range names {
 		if _, exists := plugins[n]; !exists {
 			log.Fatalf("Plugin %s does not exist", n)
@@ -37,7 +31,6 @@ func SetupPlugins(m *http.ServeMux, names[] string) {
 			universalPlugins = append(universalPlugins, p)
 		}
 	}
-	mux = m
 	for key, element := range endpointMappings {
         mux.HandleFunc(key, chainUniversalHandlers(element))
     }

@@ -6,24 +6,13 @@ import (
 	"strings"
 	"core-networkmanager/frontend/plugins"
 )
-//Page struct to hold per-page data
-type page struct {
-	Location string
-	Name string
-}
-//Plugin implements plugin interface
-type Plugin struct {}
 
-func init() {
-	plugins.RegisterPlugin("assets", &Plugin{})
-}
-
-//Activate sets up endpoints and such
-func (p Plugin ) Activate () {
+func setup() bool {
 	fileserver := http.FileServer(FileSystem{http.Dir("./assets")})
 	plugins.RegisterEndpoint("/assets/", http.StripPrefix("/assets", fileserver).ServeHTTP)
+	return true
 }
-//FileSystem implements http.Filesystem, with Open() that doesnt allow Dirs
+	//FileSystem implements http.Filesystem, with Open() that doesnt allow Dirs
 type FileSystem struct {
 	fs http.FileSystem
 }
