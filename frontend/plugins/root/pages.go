@@ -27,7 +27,13 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 		}
 		home := page{Location: "/", Name: "Home"}
 		search := page{Location: "/search", Name: "Search"}
-		data := struct { Pages []*page }{ []*page{ &home, &search } }
+		data := struct {
+				Pages []*page 
+				Hosts []*plugins.CoreHost
+			}{ 
+				[]*page{ &home, &search }, 
+				nil,
+			}
 		if err := t.ExecuteTemplate(w, "index", data); err != nil {
 			log.Fatal("ExecuteTemplate failed:", err)
 		}

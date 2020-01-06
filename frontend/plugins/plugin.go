@@ -52,7 +52,7 @@ func chainUniversalHandlers(h http.HandlerFunc) http.HandlerFunc {
  
  }
 
-//RegisterPlugin registers plugins. Should be called using init in plugin package
+//RegisterPlugin registers plugins. Should be called using init function in plugin package
 func RegisterPlugin(name string, p Plugin) {
 	pluginMu.Lock()
 	defer pluginMu.Unlock()
