@@ -1,46 +1,23 @@
-package root 
+package root
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"html/template"
 	"core-networkmanager/frontend/plugins"
+	"net/http"
+
+	"github.com/labstack/echo"
 )
 
 func setup() bool {
-	plugins.RegisterEndpoint("/", homePage)
+	plugins.RegisterEndpoint(plugins.GET, "/", homePage)
 	return true
 }
 
 //Page struct to hold per-page data
 type page struct {
 	Location string
-	Name string
+	Name     string
 }
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		t, err := template.ParseFiles("index.gohtml")
-		if err != nil {
-			log.Fatal("Parse failed: ", err)
-		}
-		home := page{Location: "/", Name: "Home"}
-		search := page{Location: "/search", Name: "Search"}
-		data := struct {
-				Pages []*page 
-				Hosts []*plugins.CoreHost
-			}{ 
-				[]*page{ &home, &search }, 
-				nil,
-			}
-		if err := t.ExecuteTemplate(w, "index", data); err != nil {
-			log.Fatal("ExecuteTemplate failed:", err)
-		}
-    } else {
-        r.ParseForm()
-        // logic part of log in
-        fmt.Println("username:", r.Form["username"])
-        fmt.Println("password:", r.Form["password"])
-    }
+func homePage(c echo.Context) error {
+	return c.String(http.StatusOK, "Hello, World!")
 }

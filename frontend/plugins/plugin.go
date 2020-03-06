@@ -1,25 +1,32 @@
 package plugins
 
 import (
+	"database/sql"
 	"log"
 	"sync"
-	"net/http"
-	"database/sql"
+
+	"github.com/labstack/echo"
 )
 
 //Global variables
 var (
-	pluginMu sync.RWMutex
-	plugins   = make(map[string]Plugin)
-	activePlugins = make(map[string]Plugin)
-	universalPlugins [] UniversalHandlerPlugin
-	endpointMappings = make(map[string]func(http.ResponseWriter, *http.Request))
-	mux *http.ServeMux
-	db *sql.DB
+	pluginMu         sync.RWMutex
+	plugins          = make(map[string]Plugin)
+	activePlugins    = make(map[string]Plugin)
+	universalPlugins []UniversalHandlerPlugin
+	endpointMappings = make([]map[string]func(echo.Context) error, 4)
+	mux              *echo.Echo
+	db               *sql.DB
 )
 
+func init() {
+	for key := range endpointMappings {
+		endpointMappings[key] = make(map[string]func(echo.Context) error)
+	}
+}
+
 //SetupPlugins activates plugins and loads endpoints
-func SetupPlugins(m *http.ServeMux, d *sql.DB, names[] string) {
+func SetupPlugins(m *echo.Echo, d *sql.DB, names []string) {
 	mux = m
 	db = d
 	for _, n := range names {
@@ -31,26 +38,36 @@ func SetupPlugins(m *http.ServeMux, d *sql.DB, names[] string) {
 			universalPlugins = append(universalPlugins, p)
 		}
 	}
-	for key, element := range endpointMappings {
-        mux.HandleFunc(key, chainUniversalHandlers(element))
-    }
+	mux.Static("/assets", "assets ")
+	for key, element := range endpointMappings[GET] {
+		mux.GET(key, chainUniversalHandlers(element))
+	}
+	for key, element := range endpointMappings[PUT] {
+		mux.GET(key, chainUniversalHandlers(element))
+	}
+	for key, element := range endpointMappings[POST] {
+		mux.GET(key, chainUniversalHandlers(element))
+	}
+	for key, element := range endpointMappings[DELETE] {
+		mux.GET(key, chainUniversalHandlers(element))
+	}
 }
-func chainUniversalHandlers(h http.HandlerFunc) http.HandlerFunc {
+func chainUniversalHandlers(h func(echo.Context) error) func(echo.Context) error {
 
 	if len(universalPlugins) < 1 {
-	   return h
+		return h
 	}
- 
+
 	wrapped := h
- 
+
 	// loop in reverse to preserve middleware order
 	for i := len(universalPlugins) - 1; i >= 0; i-- {
-	   wrapped = universalPlugins[i].UniversalHandler(wrapped)
+		wrapped = universalPlugins[i].UniversalHandler(wrapped)
 	}
- 
+
 	return wrapped
- 
- }
+
+}
 
 //RegisterPlugin registers plugins. Should be called using init function in plugin package
 func RegisterPlugin(name string, p Plugin) {
@@ -62,16 +79,16 @@ func RegisterPlugin(name string, p Plugin) {
 	if _, duplicate := plugins[name]; duplicate {
 		log.Fatal("Plugin name already taken")
 	}
-	plugins[name] = p 
+	plugins[name] = p
 }
 
-//RegisterEndpoint points an endpoint to a specific plugin while keeping 
-func RegisterEndpoint(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+//RegisterEndpoint points an endpoint to a specific plugin while keeping
+func RegisterEndpoint(request REQUEST, pattern string, handler func(echo.Context) error) {
 	if handler == nil {
 		log.Fatalf("Handler for endpoint %s is nil", pattern)
 	}
-	if _, duplicate := endpointMappings[pattern]; duplicate {
+	if _, duplicate := endpointMappings[request][pattern]; duplicate {
 		log.Fatalf("Endpoint %s has already been allocated to a different plugin", pattern)
 	}
-	endpointMappings[pattern] = handler
+	endpointMappings[request][pattern] = handler
 }

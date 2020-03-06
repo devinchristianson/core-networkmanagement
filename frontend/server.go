@@ -1,23 +1,22 @@
 package main
 
 import (
+	"core-networkmanager/frontend/plugins"
+	_ "core-networkmanager/frontend/plugins/root"
 	"log"
 	"net/http"
 	"strconv"
-	"core-networkmanager/frontend/plugins"
-	_ "core-networkmanager/frontend/plugins/root"
-	_ "core-networkmanager/frontend/plugins/assets"
+
+	"github.com/labstack/echo"
 )
 
 func main() {
-	initDB()
-	defer db.Close()
 	var port = 8080
-	mux := http.NewServeMux()
-	activePlugins := []string{"root", "assets"}
+	mux := echo.New()
+	activePlugins := []string{"root"}
 	plugins.SetupPlugins(mux, nil, activePlugins)
-	err := http.ListenAndServe(":" + strconv.Itoa(port), mux)
-	if(err != nil) {
+	err := http.ListenAndServe(":"+strconv.Itoa(port), mux)
+	if err != nil {
 		log.Fatal("ListenAndServe failed with error: ", err)
 	}
 
