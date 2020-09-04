@@ -2,38 +2,33 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
-	"strings"
 
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 )
 
-var db *sqlx.DB
-
-func openDB(host string, dbUser string, dbPort string, dbTable string, dbCertDir string) {
+func main() {
+	const (
+		host    = "roach"
+		dbUser  = "root"
+		dbPort  = "26257"
+		dbTable = "postgres"
+	)
 	dbOpts := "?sslmode=disable"
-	if dbCertDir != "" {
-		dbOpts = "?ssl=true&sslmode=require&sslrootcert=" + dbCertDir + "/ca.crt&sslkey=" + dbCertDir + "/client." + dbUser + ".key&sslcert=" + dbCertDir + "/client." + dbUser + ".crt"
-	}
 	dbcreds := fmt.Sprintf("postgresql://%s@%s:%s/%s%s",
 		dbUser, host, dbPort, dbTable, dbOpts)
-	var dberr error
-	db, dberr = sqlx.Connect("pgx", dbcreds)
+	db, dberr := sqlx.Connect("pgx", dbcreds)
 	if dberr != nil {
 		log.Fatal(dberr)
 	}
-	initDB(db, dbTable)
-}
-func initDB(db *sqlx.DB, database string) {
 	tables := [5]string{"Users", "Networks", "Hosts", "Groups", "Domains"}
+	count := 1
 	checkInit, err := db.Prepare("select count(*) as count from information_schema.tables where table_name = $1;")
 	if err != nil {
 		log.Fatal(err)
 	}
 	initialized := true
-	count := 0
 	for _, table := range tables {
 		err := checkInit.QueryRow(table).Scan(&count)
 		initialized = initialized && (count == 1)
@@ -41,7 +36,11 @@ func initDB(db *sqlx.DB, database string) {
 			log.Fatal(err)
 		}
 	}
-	if !initialized {
+	_, err = db.Exec("select 0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	/*if !initialized {
 		fmt.Print("Initializing database")
 		file, ferr := ioutil.ReadFile("init.sql")
 		if ferr != nil {
@@ -54,5 +53,5 @@ func initDB(db *sqlx.DB, database string) {
 				log.Fatal(err)
 			}
 		}
-	}
+	}*/
 }
